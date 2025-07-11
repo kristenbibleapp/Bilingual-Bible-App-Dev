@@ -179,3 +179,13 @@ function highlightVerse(verse) {
     target.classList.add('highlight');
   }
 }
+// 📬 Show service worker messages in the log box
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', event => {
+    const logBox = document.getElementById('logBox');
+    if (logBox) {
+      logBox.textContent += `\n${event.data}`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+  });
+}
