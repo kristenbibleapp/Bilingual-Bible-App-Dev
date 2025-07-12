@@ -1,7 +1,6 @@
 const CACHE_NAME = 'bilingual-bible-cache-v1';
 const OFFLINE_URLS = [
   '/',
-  './',
   'index.html',
   'style-kristen.css',
   'app.js',
