@@ -40,7 +40,7 @@ function preloadBibleFiles() {
 
     const shellFiles = [
       './', '/index.html', '/app.js', '/style-kristen.css',
-      '/manifest.json', '/icons/icon-192x192.png', '/icons/icon-512x512.png'
+      '/manifest.json', 
     ];
 
     for (const file of shellFiles) {
