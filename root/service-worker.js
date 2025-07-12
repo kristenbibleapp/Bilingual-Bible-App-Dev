@@ -6,8 +6,7 @@ const OFFLINE_URLS = [
   'style-kristen.css',
   'app.js',
   'manifest.json',
-  'icons/icon-192x192.png',
-  'icons/icon-512x512.png'
+  
 ];
 
 // 🔔 Utility: Send log messages to page
