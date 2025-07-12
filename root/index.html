@@ -6,8 +6,7 @@
   <meta name="theme-color" content="#00c3f5" />
   <title>Bilingual Bible</title>
   <link rel="stylesheet" href="style-kristen.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Untitled+Serif&display=swap" rel="stylesheet">
-  <link rel="manifest" href="/manifest.json" />
+  
 </head>
 <body>
   <div class="header">
@@ -87,7 +86,7 @@
       <button id="decreaseFont">A-</button>
       <select id="fontSelect">
         <option value="sans-serif">Sans-serif</option>
-        <option value="'Untitled Serif', serif">Untitled Serif</option>
+        
       </select>
       <button id="toggleDarkMode">🌙</button>
     </div>
@@ -117,13 +116,17 @@
   <script src="app.js"></script>
   <script src="preload-all.js"></script>
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(reg => console.log('✅ Service Worker registered:', reg.scope))
-          .catch(err => console.warn('❌ Service Worker registration failed:', err));
+   if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(registration => {
+        console.log('[✅ SW] Registered:', registration.scope);
+      })
+      .catch(error => {
+        console.error('[❌ SW] Registration failed:', error);
       });
-    }
+  });
+}
 
     function preloadBibleFilesAndDisable() {
       preloadBibleFiles().then(() => {
