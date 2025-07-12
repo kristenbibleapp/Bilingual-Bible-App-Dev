@@ -73,7 +73,7 @@ h1 {
 
 .verse-row {
   display: flex;
-  border-bottom: 2px solid #00c3f5;
+  border-bottom: 1px solid #00c3f5;
 }
 
 .verse-cell {
