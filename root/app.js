@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
     populateChapters();
     loadChapter();
   });
+
+  let swipeEnabled = true;
   
   let touchStartX = null;
 
@@ -43,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('touchend', e => {
-    if (touchStartX === null) return;
+    if (!swipeEnabled || touchStartX === null) return;
 
     const touchEndX = e.changedTouches[0].screenX;
     const deltaX = touchEndX - touchStartX;
@@ -187,5 +189,9 @@ if ('serviceWorker' in navigator) {
       logBox.textContent += `\n${event.data}`;
       logBox.scrollTop = logBox.scrollHeight;
     }
+  function toggleSwipe() {
+  swipeEnabled = !swipeEnabled;
+  document.getElementById("swipeToggleBtn").textContent = swipeEnabled ? "Disable Swipe" : "Enable Swipe";
+}
   });
 }
