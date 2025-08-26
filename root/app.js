@@ -3,6 +3,7 @@ let currentChapter = '1';
 let currentVerse = null;
 let fontSize = 1;
 let isDarkMode = false;
+let swipeEnabled = true;
 
 const chapterCounts = {
   "Genesis": 50, "Exodus": 40, "Leviticus": 27, "Numbers": 36, "Deuteronomy": 34,
@@ -28,7 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const versePicker = document.getElementById('versePicker');
   const fontSelect = document.getElementById('fontSelect');
   const verseTable = document.getElementById('verseTable');
+  const toggleInput = document.getElementById('swipeToggle');
 
+  // Initial population and load
+  populateChapters();
+  loadChapter();
+
+  // Book selection change
   bookPicker.addEventListener('change', () => {
     currentBook = bookPicker.value;
     currentChapter = '1';
@@ -36,55 +43,19 @@ document.addEventListener('DOMContentLoaded', () => {
     loadChapter();
   });
 
-  let swipeEnabled = true;
-let touchStartX = null;
-
-document.addEventListener('touchstart', e => {
-  touchStartX = e.changedTouches[0].screenX;
-});
-
-document.addEventListener('touchend', e => {
-  // Check if swipe is currently enabled
-  if (!swipeEnabled || touchStartX === null) return;
-
-  const touchEndX = e.changedTouches[0].screenX;
-  const deltaX = touchEndX - touchStartX;
-
-  if (Math.abs(deltaX) > 50) {
-    const direction = deltaX > 0 ? 'left' : 'right';
-    changeChapter(direction);
-  }
-
-  touchStartX = null;
-});
-  function toggleSwipe() {
-  swipeEnabled = document.getElementById("swipeToggle").checked;
-}
-  });
-
-  function changeChapter(direction) {
-    const chapterPicker = document.getElementById('chapterPicker');
-    const chapters = Array.from(chapterPicker.options).map(opt => opt.value);
-    const currentIndex = chapters.indexOf(currentChapter);
-
-    let newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
-    if (newIndex < 0 || newIndex >= chapters.length) return;
-
-    currentChapter = chapters[newIndex];
-    chapterPicker.value = currentChapter;
-    loadChapter();
-  }
-  
+  // Chapter change
   chapterPicker.addEventListener('change', () => {
     currentChapter = chapterPicker.value;
     loadChapter();
   });
 
+  // Verse change
   versePicker.addEventListener('change', () => {
     currentVerse = versePicker.value;
     scrollToVerse(currentVerse);
   });
 
+  // Font size controls
   document.getElementById('increaseFont').addEventListener('click', () => {
     fontSize += 0.1;
     verseTable.style.fontSize = fontSize + 'rem';
@@ -95,17 +66,43 @@ document.addEventListener('touchend', e => {
     verseTable.style.fontSize = fontSize + 'rem';
   });
 
+  // Font face change
   fontSelect.addEventListener('change', () => {
     verseTable.style.fontFamily = fontSelect.value;
   });
 
+  // Dark mode
   document.getElementById('toggleDarkMode').addEventListener('click', () => {
     isDarkMode = !isDarkMode;
     document.body.classList.toggle('dark', isDarkMode);
   });
 
-  populateChapters();
-  loadChapter();
+  // Swipe toggle
+  if (toggleInput) {
+    toggleInput.addEventListener('change', () => {
+      swipeEnabled = toggleInput.checked;
+    });
+  }
+
+  // Swipe gesture logic
+  let touchStartX = null;
+
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+
+  document.addEventListener('touchend', e => {
+    if (!swipeEnabled || touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].screenX;
+    const deltaX = touchEndX - touchStartX;
+
+    if (Math.abs(deltaX) > 50) {
+      const direction = deltaX > 0 ? 'left' : 'right';
+      changeChapter(direction);
+    }
+
+    touchStartX = null;
+  });
 });
 
 function populateChapters() {
@@ -168,6 +165,19 @@ function loadChapter() {
     });
 }
 
+function changeChapter(direction) {
+  const chapterPicker = document.getElementById('chapterPicker');
+  const chapters = Array.from(chapterPicker.options).map(opt => opt.value);
+  const currentIndex = chapters.indexOf(currentChapter);
+
+  let newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+  if (newIndex < 0 || newIndex >= chapters.length) return;
+
+  currentChapter = chapters[newIndex];
+  chapterPicker.value = currentChapter;
+  loadChapter();
+}
+
 function scrollToVerse(verse) {
   const row = document.querySelector(`.verse-row[data-verse="${verse}"]`);
   if (row) {
@@ -185,7 +195,8 @@ function highlightVerse(verse) {
     target.classList.add('highlight');
   }
 }
-// 📬 Show service worker messages in the log box
+
+// Service worker log box
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', event => {
     const logBox = document.getElementById('logBox');
@@ -193,6 +204,5 @@ if ('serviceWorker' in navigator) {
       logBox.textContent += `\n${event.data}`;
       logBox.scrollTop = logBox.scrollHeight;
     }
-
   });
 }
