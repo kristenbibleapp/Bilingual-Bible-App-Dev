@@ -193,9 +193,6 @@ if ('serviceWorker' in navigator) {
       logBox.textContent += `\n${event.data}`;
       logBox.scrollTop = logBox.scrollHeight;
     }
-  function toggleSwipe() {
-  swipeEnabled = !swipeEnabled;
-  document.getElementById("swipeToggleBtn").textContent = swipeEnabled ? "Disable Swipe" : "Enable Swipe";
-}
+
   });
 }
