@@ -37,25 +37,29 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   let swipeEnabled = true;
-  
-  let touchStartX = null;
+let touchStartX = null;
 
-  document.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-  });
+document.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+});
 
-  document.addEventListener('touchend', e => {
-    if (!swipeEnabled || touchStartX === null) return;
+document.addEventListener('touchend', e => {
+  // Check if swipe is currently enabled
+  if (!swipeEnabled || touchStartX === null) return;
 
-    const touchEndX = e.changedTouches[0].screenX;
-    const deltaX = touchEndX - touchStartX;
+  const touchEndX = e.changedTouches[0].screenX;
+  const deltaX = touchEndX - touchStartX;
 
-    if (Math.abs(deltaX) > 50) {
-      const direction = deltaX > 0 ? 'left' : 'right';
-      changeChapter(direction);
-    }
+  if (Math.abs(deltaX) > 50) {
+    const direction = deltaX > 0 ? 'left' : 'right';
+    changeChapter(direction);
+  }
 
-    touchStartX = null;
+  touchStartX = null;
+});
+  function toggleSwipe() {
+  swipeEnabled = document.getElementById("swipeToggle").checked;
+}
   });
 
   function changeChapter(direction) {
