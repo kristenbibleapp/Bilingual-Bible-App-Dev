@@ -89,7 +89,10 @@
         
       </select>
       <button id="toggleDarkMode">🌙</button>
-      <button id="swipeToggleBtn" onclick="toggleSwipe()">Swipe: ON</button>
+      <label class="switch">
+  <input type="checkbox" id="swipeToggle" checked onchange="toggleSwipe()">
+  <span class="slider round"></span>
+</label>
     </div>
   </div>
 
