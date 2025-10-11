@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#00c3f5" />
   <title>Bilingual Bible</title>
   <link rel="stylesheet" href="style-kristen.css" />
-  
 </head>
+
 <body>
   <div class="header">
     <h1>Bilingual Bible</h1>
@@ -80,19 +80,14 @@
         <option value="Jude">Jude</option>
         <option value="Revelation">Revelation</option>
       </select>
+
       <select id="chapterPicker"></select>
       <select id="versePicker"></select>
-      <button id="increaseFont">A+</button>
-      <button id="decreaseFont">A-</button>
-      <select id="fontSelect">
-        <option value="sans-serif">Sans-serif</option>
-        
-      </select>
-      <button id="toggleDarkMode">🌙</button>
+
       <label class="switch">
-  <input type="checkbox" id="swipeToggle" checked onchange="toggleSwipe()">
-  <span class="slider round"></span>
-</label>
+        <input type="checkbox" id="swipeToggle" checked onchange="toggleSwipe()">
+        <span class="slider round"></span>
+      </label>
     </div>
   </div>
 
@@ -119,18 +114,19 @@
 
   <script src="app.js"></script>
   <script src="preload-all.js"></script>
+
   <script>
-   if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(registration => {
-        console.log('[✅ SW] Registered:', registration.scope);
-      })
-      .catch(error => {
-        console.error('[❌ SW] Registration failed:', error);
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(registration => {
+            console.log('[✅ SW] Registered:', registration.scope);
+          })
+          .catch(error => {
+            console.error('[❌ SW] Registration failed:', error);
+          });
       });
-  });
-}
+    }
 
     function preloadBibleFilesAndDisable() {
       preloadBibleFiles().then(() => {
@@ -151,28 +147,31 @@
   </script>
 
   <button onclick="localStorage.removeItem('biblePreloaded'); location.reload();" style="position:fixed;bottom:5px;right:5px;font-size:12px;">🧹 Reset Preload</button>
-<script>
-  if ('caches' in window) {
-    caches.open('bilingual-bible-cache-v1').then(cache => {
-      cache.keys().then(keys => {
-        console.log("📦 Cached URLs:");
-        keys.forEach(request => console.log(request.url));
+
+  <script>
+    if ('caches' in window) {
+      caches.open('bilingual-bible-cache-v1').then(cache => {
+        cache.keys().then(keys => {
+          console.log("📦 Cached URLs:");
+          keys.forEach(request => console.log(request.url));
+        });
       });
-    });
-  }
-</script>
-  <div id="sw-log" style="max-height:200px;overflow:auto;font-family:monospace;font-size:12px;background:#000;color:#0f0;padding:10px;margin:10px;border-radius:6px;"></div>
-<script>
-  navigator.serviceWorker.addEventListener('message', event => {
-    const logBox = document.getElementById('sw-log');
-    if (logBox) {
-      const line = document.createElement('div');
-      line.textContent = event.data;
-      logBox.appendChild(line);
-      logBox.scrollTop = logBox.scrollHeight;
     }
-  });
-</script>
+  </script>
+
+  <div id="sw-log" style="max-height:200px;overflow:auto;font-family:monospace;font-size:12px;background:#000;color:#0f0;padding:10px;margin:10px;border-radius:6px;"></div>
+
+  <script>
+    navigator.serviceWorker.addEventListener('message', event => {
+      const logBox = document.getElementById('sw-log');
+      if (logBox) {
+        const line = document.createElement('div');
+        line.textContent = event.data;
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+    });
+  </script>
 </body>
 </html>
 <textarea id="logBox" rows="10" cols="50" readonly style="width: 100%; margin-top: 1rem;"></textarea>
