@@ -51,6 +51,25 @@ h1 {
   font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
+/* Larger font for Book / Chapter / Verse dropdowns */
+#bookPicker,
+#chapterPicker,
+#versePicker {
+  font-size: 1.4rem;   /* ≈22px */
+  font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: 2px solid #009cbf;
+  background-color: white;
+  color: blue;
+}
+
+#bookPicker option,
+#chapterPicker option,
+#versePicker option {
+  font-size: 1.4rem;
+}
+
 /* 🔍 Boost font in dropdown OPTION list */
 .controls select option {
   font-size: 1.5rem;
