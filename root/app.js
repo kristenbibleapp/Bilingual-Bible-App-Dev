@@ -1,8 +1,6 @@
 let currentBook = 'Genesis';
 let currentChapter = '1';
 let currentVerse = null;
-let fontSize = 1;
-let isDarkMode = false;
 let swipeEnabled = true;
 
 const chapterCounts = {
@@ -27,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const bookPicker = document.getElementById('bookPicker');
   const chapterPicker = document.getElementById('chapterPicker');
   const versePicker = document.getElementById('versePicker');
-  const fontSelect = document.getElementById('fontSelect');
   const verseTable = document.getElementById('verseTable');
   const toggleInput = document.getElementById('swipeToggle');
 
@@ -53,28 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
   versePicker.addEventListener('change', () => {
     currentVerse = versePicker.value;
     scrollToVerse(currentVerse);
-  });
-
-  // Font size controls
-  document.getElementById('increaseFont').addEventListener('click', () => {
-    fontSize += 0.1;
-    verseTable.style.fontSize = fontSize + 'rem';
-  });
-
-  document.getElementById('decreaseFont').addEventListener('click', () => {
-    fontSize = Math.max(0.5, fontSize - 0.1);
-    verseTable.style.fontSize = fontSize + 'rem';
-  });
-
-  // Font face change
-  fontSelect.addEventListener('change', () => {
-    verseTable.style.fontFamily = fontSelect.value;
-  });
-
-  // Dark mode
-  document.getElementById('toggleDarkMode').addEventListener('click', () => {
-    isDarkMode = !isDarkMode;
-    document.body.classList.toggle('dark', isDarkMode);
   });
 
   // Swipe toggle
