@@ -16,14 +16,17 @@
 </head>
 <body>
   <h1>Whole-Bible KJV Checker</h1>
-  <p>Checks every <code>/Book/NN.json</code> chapter in this repo against a reference KJV and shows mismatches.</p>
-  <p class="muted">Tip: open this page from your live site URL (https://…onrender.com/check_all_bible_text.html), not as a local file.</p>
+  <p>Checks every <code>/bible/kvj/Book/NN.json</code> chapter against a reference KJV and shows mismatches.</p>
+  <p class="muted">Open this page from your live site URL (not as a local file).</p>
   <button id="run">Run full check</button>
   <div id="progress" class="muted" style="margin-top:8px;"></div>
   <div id="results"></div>
 
   <script>
-    // Canonical KJV book list + chapter counts
+    // ---- CONFIG: your on-disk path prefix ----
+    const ROOT_PREFIX = "./bible/kvj";  // <- matches: root/bible/kvj/Genesis/01.json
+
+    // Canonical book list + chapter counts
     const BOOKS = [
       ["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deuteronomy",34],
       ["Joshua",24],["Judges",21],["Ruth",4],["1 Samuel",31],["2 Samuel",24],
@@ -41,7 +44,7 @@
       ["Jude",1],["Revelation",22]
     ];
 
-    // If bible-api.com ever blocks CORS, flip this to true to use a public CORS proxy.
+    // If bible-api.com blocks CORS for you, set this to true.
     const USE_CORS_PROXY = false; 
     const REF_BASE = "https://bible-api.com";
 
@@ -57,10 +60,10 @@
     function pad2(n){ return n < 10 ? `0${n}` : `${n}`; }
 
     async function fetchLocalChapter(book, ch){
-      // Try NN.json first (01-09), then plain n.json as fallback
+      // Try NN.json first (01-09), then n.json as fallback
       const tryUrls = [
-        `./${book}/${pad2(ch)}.json`,
-        `./${book}/${ch}.json`
+        `${ROOT_PREFIX}/${book}/${pad2(ch)}.json`,
+        `${ROOT_PREFIX}/${book}/${ch}.json`
       ];
       for (const url of tryUrls){
         const r = await fetch(url);
@@ -73,13 +76,15 @@
           return texts;
         }
       }
-      throw new Error(`Missing ${book}/${pad2(ch)}.json`);
+      throw new Error(`Missing ${ROOT_PREFIX}/${book}/${pad2(ch)}.json`);
     }
 
     async function fetchRefChapter(book, ch){
       const qBook = encodeURIComponent(book);
       const url = `${REF_BASE}/${qBook}%20${ch}?translation=kjv`;
-      const finalUrl = USE_CORS_PROXY ? `https://r.jina.ai/http://bible-api.com/${qBook}%20${ch}?translation=kjv` : url;
+      const finalUrl = USE_CORS_PROXY
+        ? `https://r.jina.ai/http://bible-api.com/${qBook}%20${ch}?translation=kjv`
+        : url;
       const r = await fetch(finalUrl);
       if (!r.ok){ throw new Error(`Ref fetch failed ${book} ${ch}`); }
       const js = await r.json();
@@ -135,16 +140,13 @@
             resultsDiv.appendChild(line);
           }catch(e){
             errs++;
-            if (String(e).includes("Missing")){
-              missing++;
-            }
+            if (String(e).includes("Missing")) missing++;
             const line = document.createElement("div");
             line.className = "bad";
             line.textContent = `! ${book} ${ch} -- ${e.message || e}`;
             resultsDiv.appendChild(line);
           }
-          // polite throttle to avoid hammering the API
-          await new Promise(r => setTimeout(r, 200));
+          await new Promise(r => setTimeout(r, 200)); // gentle throttle
         }
       }
       progress(`Done. Total: ${total} | OK: ${ok} | Mismatches: ${bad} | Missing: ${missing} | Errors: ${errs}`);
