@@ -24,7 +24,7 @@
 
   <script>
     // ---- CONFIG: your on-disk path prefix ----
-    const ROOT_PREFIX = "./bible/kjv";  // <- matches: root/bible/kjv/Genesis/01.json
+    const ROOT_PREFIX = "./bible/kjv";  // matches: root/bible/kjv/Genesis/01.json
 
     // Canonical book list + chapter counts
     const BOOKS = [
@@ -51,34 +51,57 @@
     const progress = (msg) => document.getElementById("progress").textContent = msg;
     const resultsDiv = document.getElementById("results");
 
+    // ----- Normalization helpers (ignore decorations that shouldn't trip diffs) -----
+    const stripHtml = (s) => s.replace(/<[^>]+>/g, "");
+    const stripLeadVerseNum = (s) => s.replace(/^\s*\(?\d+\)?[.:)]\s*/,''); // 1  (1)  1.  1)  1:
+    const stripPilcrow = (s) => s.replace(/¶/g, "");
+    const stripBracketHead = (s) => s.replace(/^\s*\[[^\]]+\]\s*/,'');      // [Heading]
+
     const norm = (s) => s
       .replace(/\u201c|\u201d/g,'"').replace(/\u2018|\u2019/g,"'")
       .replace(/\s+/g,' ').trim();
 
-    const normStrict = (s) => norm(s).replace(/[^\w\s]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+    const normStrict = (s) => {
+      s = stripHtml(s);
+      s = stripPilcrow(s);
+      s = stripBracketHead(s);
+      s = stripLeadVerseNum(s);
+      s = norm(s);
+      s = s.replace(/[^\w\s]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+      return s;
+    };
 
     function pad2(n){ return n < 10 ? `0${n}` : `${n}`; }
 
+    // ----- Local chapter loader: supports your keyed JSON chapter shape -----
     async function fetchLocalChapter(book, ch){
-      // Try NN.json first (01-09), then n.json as fallback
       const tryUrls = [
         `${ROOT_PREFIX}/${book}/${pad2(ch)}.json`,
         `${ROOT_PREFIX}/${book}/${ch}.json`
       ];
       for (const url of tryUrls){
         const r = await fetch(url);
-        if (r.ok){
-          const js = await r.json();
-          const verses = Array.isArray(js.verses) ? js.verses : [];
-          const texts = verses.length && typeof verses[0] === "object"
-            ? verses.map(v => `${v.text ?? ""}`)
-            : verses.map(v => `${v}`);
-          return texts;
+        if (!r.ok) continue;
+        const js = await r.json();
+
+        let texts = [];
+        if (Array.isArray(js?.verses)) {
+          // array shape (fallback if you ever have a file like this)
+          texts = js.verses.map(v => (typeof v === "object" ? (v.text ?? "") : `${v}`));
+        } else if (js && typeof js === "object") {
+          // your shape: {"1": "text", "2": "text", ...}
+          texts = Object.keys(js)
+            .sort((a,b) => parseInt(a) - parseInt(b))
+            .map(k => `${js[k]}`);
         }
+
+        // Light normalize at load; strict compare happens in firstDiff
+        return texts.map(t => norm(t));
       }
       throw new Error(`Missing ${ROOT_PREFIX}/${book}/${pad2(ch)}.json`);
     }
 
+    // ----- Reference chapter loader -----
     async function fetchRefChapter(book, ch){
       const qBook = encodeURIComponent(book);
       const url = `${REF_BASE}/${qBook}%20${ch}?translation=kjv`;
@@ -108,6 +131,7 @@
     async function run(){
       resultsDiv.textContent = "";
       let total=0, ok=0, bad=0, missing=0, errs=0;
+
       for (const [book, maxCh] of BOOKS){
         const head = document.createElement("div");
         head.innerHTML = `<strong>${book}</strong>`;
