@@ -95,83 +95,17 @@
     <div class="verse-table" id="verseTable"></div>
   </div>
 
-  <style>
-    #preloadBtn {
-      font-size: 18px;
-      padding: 12px 20px;
-      margin: 20px auto;
-      display: block;
-      background-color: #003cf5;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      z-index: 9999;
-    }
-  </style>
-
-  <button id="preloadBtn" onclick="preloadBibleFilesAndDisable()">📥 Preload Entire Bible for Offline</button>
-
+  <!-- App script only -->
   <script src="app.js"></script>
-  <script src="preload-all.js"></script>
 
+  <!-- Optional: keep service worker registration but no UI logs -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js')
-          .then(registration => {
-            console.log('[✅ SW] Registered:', registration.scope);
-          })
-          .catch(error => {
-            console.error('[❌ SW] Registration failed:', error);
-          });
+          .catch(() => {/* silent fail */});
       });
     }
-
-    function preloadBibleFilesAndDisable() {
-      preloadBibleFiles().then(() => {
-        const btn = document.getElementById('preloadBtn');
-        btn.disabled = true;
-        btn.textContent = '✅ Bible Cached';
-        localStorage.setItem('biblePreloaded', 'true');
-      });
-    }
-
-    if (localStorage.getItem('biblePreloaded')) {
-      const btn = document.getElementById('preloadBtn');
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = '✅ Bible Already Cached';
-      }
-    }
-  </script>
-
-  <button onclick="localStorage.removeItem('biblePreloaded'); location.reload();" style="position:fixed;bottom:5px;right:5px;font-size:12px;">🧹 Reset Preload</button>
-
-  <script>
-    if ('caches' in window) {
-      caches.open('bilingual-bible-cache-v1').then(cache => {
-        cache.keys().then(keys => {
-          console.log("📦 Cached URLs:");
-          keys.forEach(request => console.log(request.url));
-        });
-      });
-    }
-  </script>
-
-  <div id="sw-log" style="max-height:200px;overflow:auto;font-family:monospace;font-size:12px;background:#000;color:#0f0;padding:10px;margin:10px;border-radius:6px;"></div>
-
-  <script>
-    navigator.serviceWorker.addEventListener('message', event => {
-      const logBox = document.getElementById('sw-log');
-      if (logBox) {
-        const line = document.createElement('div');
-        line.textContent = event.data;
-        logBox.appendChild(line);
-        logBox.scrollTop = logBox.scrollHeight;
-      }
-    });
   </script>
 </body>
 </html>
-<textarea id="logBox" rows="10" cols="50" readonly style="width: 100%; margin-top: 1rem;"></textarea>

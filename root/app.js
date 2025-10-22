@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const bookPicker = document.getElementById('bookPicker');
   const chapterPicker = document.getElementById('chapterPicker');
   const versePicker = document.getElementById('versePicker');
-  const verseTable = document.getElementById('verseTable');
   const toggleInput = document.getElementById('swipeToggle');
 
   // Initial population and load
@@ -52,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollToVerse(currentVerse);
   });
 
-  // Swipe toggle
+  // Swipe toggle (also wired to inline toggleSwipe())
   if (toggleInput) {
     toggleInput.addEventListener('change', () => {
       swipeEnabled = toggleInput.checked;
@@ -80,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// Keep chapter picker populated with correct count
 function populateChapters() {
   const chapterPicker = document.getElementById('chapterPicker');
   chapterPicker.innerHTML = '';
@@ -135,7 +135,7 @@ function loadChapter() {
       }
     })
     .catch(err => {
-      console.error('Error loading chapter:', err);
+      // keep this minimal visual feedback (no console box)
       document.getElementById('verseTable').innerHTML = '<p style="color:red;">❌ Error loading scripture.</p>';
     });
 }
@@ -171,13 +171,8 @@ function highlightVerse(verse) {
   }
 }
 
-// Service worker log box
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('message', event => {
-    const logBox = document.getElementById('logBox');
-    if (logBox) {
-      logBox.textContent += `\n${event.data}`;
-      logBox.scrollTop = logBox.scrollHeight;
-    }
-  });
+// Provide a no-op for the inline onchange in index.html
+function toggleSwipe() {
+  const t = document.getElementById('swipeToggle');
+  if (t) swipeEnabled = !!t.checked;
 }
