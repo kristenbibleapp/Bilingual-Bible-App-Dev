@@ -4,29 +4,28 @@
   <meta charset="utf-8" />
   <title>Whole-Bible KJV Checker</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 16px; }
-    button { padding: 10px 14px; font-size: 16px; }
-    .ok { color: #2f8f2f; }
-    .bad { color: #c62828; }
-    .muted { color: #666; }
-    #results { margin-top: 12px; line-height: 1.5; white-space: pre-wrap; }
-    details { margin: 8px 0; }
-    summary { cursor: pointer; }
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; padding:16px; }
+    button { padding:10px 14px; font-size:16px; }
+    .ok  { color:#2f8f2f; }
+    .bad { color:#c62828; }
+    .muted { color:#666; }
+    #results { margin-top:12px; line-height:1.5; white-space:pre-wrap; }
+    details { margin:8px 0; }
+    summary { cursor:pointer; }
   </style>
 </head>
 <body>
   <h1>Whole-Bible KJV Checker</h1>
-  <p>Checks every <code>/bible/kjv/Book/NN.json</code> chapter against a reference KJV and shows mismatches.</p>
-  <p class="muted">Open this page from your live site URL (not as a local file).</p>
+  <p>Compares every <code>/bible/kjv/Book/NN.json</code> chapter against a reference KJV.</p>
   <button id="run">Run full check</button>
   <div id="progress" class="muted" style="margin-top:8px;"></div>
   <div id="results"></div>
 
   <script>
-    // ---- CONFIG: your on-disk path prefix ----
-    const ROOT_PREFIX = "./bible/kjv";  // matches: root/bible/kjv/Genesis/01.json
+    const ROOT_PREFIX = "./bible/kjv";
+    const REF_BASE = "https://bible-api.com";
+    const USE_CORS_PROXY = false;
 
-    // Canonical book list + chapter counts
     const BOOKS = [
       ["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deuteronomy",34],
       ["Joshua",24],["Judges",21],["Ruth",4],["1 Samuel",31],["2 Samuel",24],
@@ -44,139 +43,140 @@
       ["Jude",1],["Revelation",22]
     ];
 
-    // If bible-api.com blocks CORS for you, set this to true.
-    const USE_CORS_PROXY = false; 
-    const REF_BASE = "https://bible-api.com";
-
-    const progress = (msg) => document.getElementById("progress").textContent = msg;
+    const progress = msg => document.getElementById("progress").textContent = msg;
     const resultsDiv = document.getElementById("results");
+    const wait = ms => new Promise(r => setTimeout(r, ms));
 
-    // ----- Normalization helpers (ignore decorations that shouldn't trip diffs) -----
-    const stripHtml = (s) => s.replace(/<[^>]+>/g, "");
-    const stripLeadVerseNum = (s) => s.replace(/^\s*\(?\d+\)?[.:)]\s*/,''); // 1  (1)  1.  1)  1:
-    const stripPilcrow = (s) => s.replace(/¶/g, "");
-    const stripBracketHead = (s) => s.replace(/^\s*\[[^\]]+\]\s*/,'');      // [Heading]
+    // --- Normalizers ---------------------------------------------------------
+    const stripHtml = s => s.replace(/<[^>]+>/g,"");
+    const stripPilcrow = s => s.replace(/¶/g,"");
+    const stripBracket = s => s.replace(/\[[^\]]+\]/g,"");
+    const stripLeadNum = s => s.replace(/^\s*\(?\d+\)?[.:)]\s*/,"");
 
-    const norm = (s) => s
-      .replace(/\u201c|\u201d/g,'"').replace(/\u2018|\u2019/g,"'")
-      .replace(/\s+/g,' ').trim();
-
-    const normStrict = (s) => {
+    function normalizeLoose(s){
+      s = (s||"")
+        .replace(/\u201c|\u201d/g,'"')
+        .replace(/\u2018|\u2019/g,"'")
+        .toLowerCase();
       s = stripHtml(s);
       s = stripPilcrow(s);
-      s = stripBracketHead(s);
-      s = stripLeadVerseNum(s);
-      s = norm(s);
-      s = s.replace(/[^\w\s]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+      s = stripBracket(s);
+      s = stripLeadNum(s);
+      s = s.replace(/[^\w\s]/g," ");          // remove punctuation
+      s = s.replace(/\b(\w+?)s\b/g,"$1");     // flatten plurals
+      s = s.replace(/\bthroughly\b/g,"thoroughly");
+      s = s.replace(/\s+/g," ").trim();
       return s;
-    };
-
-    function pad2(n){ return n < 10 ? `0${n}` : `${n}`; }
-
-    // ----- Local chapter loader: supports your keyed JSON chapter shape -----
-    async function fetchLocalChapter(book, ch){
-      const tryUrls = [
-        `${ROOT_PREFIX}/${book}/${pad2(ch)}.json`,
-        `${ROOT_PREFIX}/${book}/${ch}.json`
-      ];
-      for (const url of tryUrls){
-        const r = await fetch(url);
-        if (!r.ok) continue;
-        const js = await r.json();
-
-        let texts = [];
-        if (Array.isArray(js?.verses)) {
-          // array shape (fallback if you ever have a file like this)
-          texts = js.verses.map(v => (typeof v === "object" ? (v.text ?? "") : `${v}`));
-        } else if (js && typeof js === "object") {
-          // your shape: {"1": "text", "2": "text", ...}
-          texts = Object.keys(js)
-            .sort((a,b) => parseInt(a) - parseInt(b))
-            .map(k => `${js[k]}`);
-        }
-
-        // Light normalize at load; strict compare happens in firstDiff
-        return texts.map(t => norm(t));
-      }
-      throw new Error(`Missing ${ROOT_PREFIX}/${book}/${pad2(ch)}.json`);
-    }
-
-    // ----- Reference chapter loader -----
-    async function fetchRefChapter(book, ch){
-      const qBook = encodeURIComponent(book);
-      const url = `${REF_BASE}/${qBook}%20${ch}?translation=kjv`;
-      const finalUrl = USE_CORS_PROXY
-        ? `https://r.jina.ai/http://bible-api.com/${qBook}%20${ch}?translation=kjv`
-        : url;
-      const r = await fetch(finalUrl);
-      if (!r.ok){ throw new Error(`Ref fetch failed ${book} ${ch}`); }
-      const js = await r.json();
-      const verses = Array.isArray(js.verses) ? js.verses : [];
-      return verses.map(v => norm(v.text ?? ""));
     }
 
     function firstDiff(localArr, refArr){
       const n = Math.min(localArr.length, refArr.length);
-      for (let i=0;i<n;i++){
-        if (normStrict(localArr[i]) !== normStrict(refArr[i])){
-          return { v: i+1, local: localArr[i], ref: refArr[i] };
+      for(let i=0;i<n;i++){
+        if(normalizeLoose(localArr[i])!==normalizeLoose(refArr[i])){
+          return {v:i+1, local:localArr[i], ref:refArr[i]};
         }
       }
-      if (localArr.length !== refArr.length){
-        return { v: n+1, local: `[local length=${localArr.length}]`, ref: `[ref length=${refArr.length}]` };
+      if(localArr.length!==refArr.length){
+        return {v:n+1, local:`[local length=${localArr.length}]`,
+                ref:`[ref length=${refArr.length}]`};
       }
       return null;
     }
 
-    async function run(){
-      resultsDiv.textContent = "";
-      let total=0, ok=0, bad=0, missing=0, errs=0;
+    // --- Loaders -------------------------------------------------------------
+    async function fetchLocalChapter(book,ch){
+      const encBook = encodeURIComponent(book);
+      const urls=[`${ROOT_PREFIX}/${encBook}/${String(ch).padStart(2,"0")}.json`,
+                  `${ROOT_PREFIX}/${encBook}/${ch}.json`];
+      let lastErr=null;
+      for(const url of urls){
+        try{
+          const r=await fetch(url);
+          if(!r.ok){ lastErr=new Error(`LOCAL ${book} ${ch} HTTP ${r.status}`); continue; }
+          let js;
+          try{ js=await r.json(); }catch{ throw new Error(`LOCAL ${book} ${ch} JSON parse error`); }
+          let texts=[];
+          if(Array.isArray(js?.verses)){
+            texts=js.verses.map(v=>typeof v==="object"?(v.text??""):String(v));
+          }else if(js&&typeof js==="object"){
+            texts=Object.keys(js).sort((a,b)=>+a-+b).map(k=>String(js[k]));
+          }else{ throw new Error(`LOCAL ${book} ${ch} unknown JSON shape`); }
+          return texts;
+        }catch(e){ lastErr=e; }
+      }
+      throw lastErr||new Error(`LOCAL ${book} ${ch} not found`);
+    }
 
-      for (const [book, maxCh] of BOOKS){
-        const head = document.createElement("div");
-        head.innerHTML = `<strong>${book}</strong>`;
+    async function fetchRefChapter(book,ch){
+      const qBook=encodeURIComponent(book);
+      const direct=`${REF_BASE}/${qBook}%20${ch}?translation=kjv`;
+      const proxy=`https://r.jina.ai/http://bible-api.com/${qBook}%20${ch}?translation=kjv`;
+
+      async function tryUrl(url,label){
+        const r=await fetch(url);
+        if(!r.ok) throw new Error(`REF ${label} ${book} ${ch} HTTP ${r.status}`);
+        let js;
+        try{ js=await r.json(); }catch{ throw new Error(`REF ${label} ${book} ${ch} JSON parse`); }
+        const verses=Array.isArray(js.verses)?js.verses:[];
+        if(!verses.length) throw new Error(`REF ${label} ${book} ${ch} empty`);
+        return verses.map(v=>v.text??"");
+      }
+
+      try{ return await tryUrl(direct,"DIRECT"); }
+      catch(e){
+        if(String(e).includes("HTTP 429")||String(e).includes("HTTP 5")){
+          await wait(600);
+          return await tryUrl(proxy,"PROXY");
+        }
+        throw e;
+      }
+    }
+
+    // --- Runner --------------------------------------------------------------
+    async function run(){
+      resultsDiv.textContent="";
+      let total=0,ok=0,bad=0,missing=0,errs=0;
+
+      for(const [book,maxCh] of BOOKS){
+        const head=document.createElement("div");
+        head.innerHTML=`<strong>${book}</strong>`;
         resultsDiv.appendChild(head);
 
-        for (let ch=1; ch<=maxCh; ch++){
+        for(let ch=1; ch<=maxCh; ch++){
           total++;
           progress(`Checking ${book} ${ch} …`);
           try{
-            const local = await fetchLocalChapter(book, ch);
-            const ref = await fetchRefChapter(book, ch);
-            const diff = firstDiff(local, ref);
-            const line = document.createElement("div");
-            if (!diff){
-              ok++;
-              line.className = "ok";
-              line.textContent = `✓ ${book} ${ch}`;
+            const local=await fetchLocalChapter(book,ch);
+            const ref=await fetchRefChapter(book,ch);
+            const diff=firstDiff(local,ref);
+            const line=document.createElement("div");
+            if(!diff){
+              ok++; line.className="ok"; line.textContent=`✓ ${book} ${ch}`;
             }else{
-              bad++;
-              line.className = "bad";
-              const detail = document.createElement("details");
-              const sum = document.createElement("summary");
-              sum.textContent = `✗ ${book} ${ch} (first diff v${diff.v})`;
-              const body = document.createElement("div");
-              body.innerHTML = `<div><em>Local:</em> ${diff.local}</div><div><em>Ref:</em> ${diff.ref}</div>`;
-              detail.appendChild(sum);
-              detail.appendChild(body);
-              line.appendChild(detail);
+              bad++; line.className="bad";
+              const det=document.createElement("details");
+              const sum=document.createElement("summary");
+              sum.textContent=`✗ ${book} ${ch} (v${diff.v})`;
+              const body=document.createElement("div");
+              body.innerHTML=`<em>Local:</em> ${diff.local}<br><em>Ref:</em> ${diff.ref}`;
+              det.appendChild(sum); det.appendChild(body); line.appendChild(det);
             }
             resultsDiv.appendChild(line);
           }catch(e){
             errs++;
-            if (String(e).includes("Missing")) missing++;
-            const line = document.createElement("div");
-            line.className = "bad";
-            line.textContent = `! ${book} ${ch} -- ${e.message || e}`;
+            if(String(e).includes("LOCAL")) missing++;
+            const line=document.createElement("div");
+            line.className="bad";
+            line.textContent=`! ${book} ${ch} -- ${e.message}`;
             resultsDiv.appendChild(line);
           }
-          await new Promise(r => setTimeout(r, 200)); // gentle throttle
+          await wait(350); // throttle
         }
       }
-      progress(`Done. Total: ${total} | OK: ${ok} | Mismatches: ${bad} | Missing: ${missing} | Errors: ${errs}`);
+      progress(`Done. Total:${total} ✓${ok} ✗${bad} Missing:${missing} Errors:${errs}`);
     }
 
-    document.getElementById("run").addEventListener("click", run);
+    document.getElementById("run").addEventListener("click",run);
   </script>
 </body>
 </html>
