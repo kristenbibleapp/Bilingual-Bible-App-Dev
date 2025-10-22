@@ -16,7 +16,7 @@
 </head>
 <body>
   <h1>Whole-Bible KJV Checker</h1>
-  <p>Checks every <code>/bible/kvj/Book/NN.json</code> chapter against a reference KJV and shows mismatches.</p>
+  <p>Checks every <code>/bible/kjv/Book/NN.json</code> chapter against a reference KJV and shows mismatches.</p>
   <p class="muted">Open this page from your live site URL (not as a local file).</p>
   <button id="run">Run full check</button>
   <div id="progress" class="muted" style="margin-top:8px;"></div>
@@ -24,7 +24,7 @@
 
   <script>
     // ---- CONFIG: your on-disk path prefix ----
-    const ROOT_PREFIX = "./bible/kvj";  // <- matches: root/bible/kvj/Genesis/01.json
+    const ROOT_PREFIX = "./bible/kjv";  // <- matches: root/bible/kjv/Genesis/01.json
 
     // Canonical book list + chapter counts
     const BOOKS = [
